@@ -1,0 +1,174 @@
+<?php
+// $Id$
+
+/********************************************************************
+ * Drupal Hooks
+ ********************************************************************/
+
+function typogrify_filter($op, $delta = 0, $format = -1, $text = '') {
+  switch ($op) {
+    case 'list':
+      return array(t('Typogrify'));
+
+    case 'description':
+      return t('Adds typographic refinements.');
+
+    case 'settings':
+      return _typogrify_settings($format);
+
+    case 'process':
+      return _typogrify_process($text, $format);
+
+    default:
+      return $text;
+  }
+}
+
+function typogrify_filter_tips($delta = 0, $format = -1, $long) {
+  if ($long) {
+    $the_output = t('Typogrify.module brings the typographic refinements of Typogrify to Drupal.<ul>
+<li>Wraps ampersands (the $ldquo;&amp;&rdquo; character) with &lt;span class=\"amp\"&gt;&amp;&lt;/span&gt;.</li>
+<li>Prevents single words from wrapping onto their own line using Shaun Inman\'s Widont technique.</li>
+<li>Converts straight quotation marks to typographer\'s quotation marks, using SmartyPants.</li>
+<li>Converts multiple hyphens to en dashes and em dashes (according to your preferences), using SmartyPants.</li>
+<li>Wraps multiple capital letters with &lt;span class=\"caps\"&gt;CAPS&lt;/span&gt;.</li>
+<li>Wraps initial quotation marks with &lt;span class=\"quo\"&gt;&lt;/span&gt; or &lt;span class=\"dquo\"&gt;&lt;/span&gt;.</li>
+<li>Adds a css style sheet that uses the &lt;span&gt; tags to substitute a showy ampersand in headlines, switch caps to small caps, and hang initial quotation marks.</li></ul>');
+  } else {
+    $the_output = t('Adds typographic refinements.');
+  }
+
+  return $the_output;
+}
+
+function typogrify_help($in_section = 'admin/help#typogrify') {
+  switch ($in_section) {
+    case 'admin/settings/modules#description':
+      $the_output = t('Adds typographic refinements.');
+      break;
+
+    case 'admin/help#typogrify':
+      $the_output = t('Adds typographic refinements.');
+      break;
+  }
+
+  return $the_output;
+}
+
+/********************************************************************
+ * Module Functions
+ ********************************************************************/
+
+function _typogrify_process($text, $format) {
+
+  require_once(dirname(__FILE__) . '/smartypants.php');
+  require_once(dirname(__FILE__) . '/php-typogrify.php');
+
+  // Wrap ampersands
+  if (variable_get("typogrify_is_amp_on_$format", 1) == 1) {
+    $text = amp($text);
+  }
+  
+  // Remove widows
+  if (variable_get("typogrify_is_widont_on_$format", 1) == 1) {
+    $text = widont($text);
+  }
+  
+  // Smartypants formatting
+  if (variable_get("typogrify_is_smarty_on_$format", 1) == 1) {
+    global $smartypants_attr;
+    $smartypants_attr = variable_get("typogrify_smarty_hyphens_$format", 0) + 1;
+    $text = SmartyPants($text);
+  }
+  
+  // Wrap caps
+  if (variable_get("typogrify_is_caps_on_$format", 1) == 1) {
+    $text = caps($text);
+  }
+
+  // Wrap initial quotes
+  if (variable_get("typogrify_is_initial_quotes_on_$format", 1) == 1) {
+    $text = initial_quotes($text);
+  }
+
+  return $text;
+}
+
+function _typogrify_settings($format) {
+  require_once(dirname(__FILE__) . '/smartypants.php');
+
+  $form['typogrify_settings'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Typogrify'),
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
+  );
+  
+  $form['typogrify_settings']['help'] = array(
+    '#type' => 'markup',
+    '#value' => '<p>Enable the following typographic refinements:</p>',
+  );
+  
+  // Smartypants settings
+  $form['typogrify_settings']["typogrify_is_smarty_on_$format"] = array(
+    '#type' => 'select',
+    '#title' => t('Enable <a href="http://daringfireball.net/projects/smartypants/">SmartyPants</a>?'),
+    '#default_value' => variable_get("typogrify_is_smarty_on_$format", 1),
+    '#options' => array(0 => t('No'), 1 => t('Yes')),
+  );
+  
+  // Smartypants hyphenation settings
+  $form['typogrify_settings']["typogrify_smarty_hyphens_$format"] = array(
+    '#type' => 'select',
+    '#title' => t('Hyphenation settings for SmartyPants'),
+    '#default_value' => variable_get("typogrify_smarty_hyphens_$format", 0),
+    '#options' => array(0 => t('"--" for em-dashes; no en-dash support'), 1 => t('"---" for em-dashes; "--" for en-dashes'), 2 => t('"--" for em-dashes; "---" for en-dashes')),
+  );
+  
+  // Wrap ampersand settings
+  $form['typogrify_settings']["typogrify_is_amp_on_$format"] = array(
+    '#type' => 'select',
+    '#title' => t('Wrap ampersands?'),
+    '#default_value' => variable_get("typogrify_is_amp_on_$format", 1),
+    '#options' => array(0 => t('No'), 1 => t('Yes')),
+  );
+    
+  // Remove widows settings
+  $form['typogrify_settings']["typogrify_is_widont_on_$format"] = array(
+    '#type' => 'select',
+    '#title' => t('Remove widows?'),
+    '#default_value' => variable_get("typogrify_is_widont_on_$format", 1),
+    '#options' => array(0 => t('No'), 1 => t('Yes')),
+  );
+    
+  // Wrap caps settings
+  $form['typogrify_settings']["typogrify_is_caps_on_$format"] = array(
+    '#type' => 'select',
+    '#title' => t('Wrap caps?'),
+    '#default_value' => variable_get("typogrify_is_caps_on_$format", 1),
+    '#options' => array(0 => t('No'), 1 => t('Yes')),
+  );
+    
+  // Wrap initial quotes settings
+  $form['typogrify_settings']["typogrify_is_initial_quotes_on_$format"] = array(
+    '#type' => 'select',
+    '#title' => t('Wrap quotation marks?'),
+    '#default_value' => variable_get("typogrify_is_initial_quotes_on_$format", 1),
+    '#options' => array(0 => t('No'), 1 => t('Yes')),
+  );
+  
+  $the_output = '<ul>';
+  $the_output .= '<li>SmartyPants PHP Version: <a href="http://www.michelf.com/projects/php-smartypants/">'.$GLOBALS['SmartyPantsPHPVersion'].'</a></li>';
+  $the_output .= '<li>SmartyPants Syntax Version: '.$GLOBALS['SmartyPantsSyntaxVersion'] .'</li>';
+  $the_output .= '<li>PHP Typogrify Version: <a href="http://blog.hamstu.com/">1.0</a></li>';
+  $the_output .= '</ul>';
+
+  $form['typogrify_settings']['typogrify_status'] = array(
+    '#type' => 'markup',
+    '#value' => $the_output,
+  );
+
+  return $form;
+}
+
+?>
