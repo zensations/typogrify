@@ -4,6 +4,5 @@ name = Typogrify
 description = Adds typographic refinements.
 package = "Input filters"
 dependencies = filter
-version = "5.x-1.x-dev"
 project = "typogrify"
 
