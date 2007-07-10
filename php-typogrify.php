@@ -58,7 +58,9 @@ Author URI: http://www.hamstu.com/
 
 // We need some smartypants :)
 //require("smartypants.php");
-require_once(dirname(__FILE__) . '/smartypants.php'); // Modified by TG to keep smartypants from loading twice
+//require_once(dirname(__FILE__) . '/smartypants.php'); 
+// Removed by TG to keep typogrify.module from conflicting with marksmarty.module.
+// (Now we can load smartypants.php conditionally, depending on whether marksmarty.module exists)
 
 /**
  * amp

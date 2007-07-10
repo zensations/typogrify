@@ -24,6 +24,7 @@ function typogrify_filter($op, $delta = 0, $format = -1, $text = '') {
   }
 }
 
+
 function typogrify_filter_tips($delta = 0, $format = -1, $long) {
   if ($long) {
     $the_output = t('Typogrify.module brings the typographic refinements of Typogrify to Drupal.<ul>
@@ -61,9 +62,9 @@ function typogrify_help($in_section = 'admin/help#typogrify') {
 
 function _typogrify_process($text, $format) {
 
-  require_once(dirname(__FILE__) . '/smartypants.php');
   require_once(dirname(__FILE__) . '/php-typogrify.php');
-
+  require_once(dirname(__FILE__) . '/unicode-conversion.php');
+  
   // Wrap ampersands
   if (variable_get("typogrify_is_amp_on_$format", 1) == 1) {
     $text = amp($text);
@@ -74,11 +75,15 @@ function _typogrify_process($text, $format) {
     $text = widont($text);
   }
   
+  
   // Smartypants formatting
-  if (variable_get("typogrify_is_smarty_on_$format", 1) == 1) {
-    global $smartypants_attr;
-    $smartypants_attr = variable_get("typogrify_smarty_hyphens_$format", 0) + 1;
-    $text = SmartyPants($text);
+  if (! module_exists('marksmarty')) {
+    require_once(dirname(__FILE__) . '/smartypants.php');
+    if (variable_get("typogrify_is_smarty_on_$format", 1) == 1) {
+      global $smartypants_attr;
+      $smartypants_attr = variable_get("typogrify_smarty_hyphens_$format", 0) + 1;
+      $text = SmartyPants($text);
+    }
   }
   
   // Wrap caps
@@ -91,11 +96,33 @@ function _typogrify_process($text, $format) {
     $text = initial_quotes($text);
   }
 
+  // Build a list of ligatures to convert
+  foreach ($ligature_map as $pair => $ligature) {
+    $setting = 'typogrify_use_' . $pair . '_ligature_' . $format;
+    if (variable_get($setting, 0) == 1) {
+      $characters_to_convert[] = $pair;
+    }
+  }
+  
+  // Build a list of arrows to convert
+  foreach ($arrow_map as $ascii => $unicode) {
+    $setting = 'typogrify_use_unicode_for_' . $ascii . '_' . $format;
+    if (variable_get($setting, 0) == 1) {
+      $characters_to_convert[] = $ascii;
+    }
+  }
+  
+  // Convert ligatures and arrows
+  if (count($characters_to_convert) > 0){
+    $text = convert_characters($text, $characters_to_convert);
+  }
+
   return $text;
 }
 
 function _typogrify_settings($format) {
-  require_once(dirname(__FILE__) . '/smartypants.php');
+
+  require_once(dirname(__FILE__) . '/unicode-conversion.php');
 
   $form['typogrify_settings'] = array(
     '#type' => 'fieldset',
@@ -110,60 +137,105 @@ function _typogrify_settings($format) {
   );
   
   // Smartypants settings
-  $form['typogrify_settings']["typogrify_is_smarty_on_$format"] = array(
-    '#type' => 'select',
-    '#title' => t('Enable <a href="http://daringfireball.net/projects/smartypants/">SmartyPants</a>?'),
-    '#default_value' => variable_get("typogrify_is_smarty_on_$format", 1),
-    '#options' => array(0 => t('No'), 1 => t('Yes')),
-  );
-  
-  // Smartypants hyphenation settings
-  $form['typogrify_settings']["typogrify_smarty_hyphens_$format"] = array(
-    '#type' => 'select',
-    '#title' => t('Hyphenation settings for SmartyPants'),
-    '#default_value' => variable_get("typogrify_smarty_hyphens_$format", 0),
-    '#options' => array(0 => t('"--" for em-dashes; no en-dash support'), 1 => t('"---" for em-dashes; "--" for en-dashes'), 2 => t('"--" for em-dashes; "---" for en-dashes')),
-  );
-  
+  // We impersonate Marksmarty to ensure that settings are honored by both marksmarty.module and typogrify.module
+  if (! module_exists('marksmarty')) {
+  // Smartypants settings
+    $form['typogrify_settings']["marksmarty_is_smarty_on_$format"] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Use typographers quotation marks and dashes (<a href="http://daringfireball.net/projects/smartypants/">SmartyPants</a>)'),
+      '#default_value' => variable_get("marksmarty_is_smarty_on_$format", 1),
+    );
+    
+    // Smartypants hyphenation settings
+    $form['typogrify_settings']["marksmarty_smarty_hyphens_$format"] = array(
+      '#type' => 'select',
+      '#title' => t('Hyphenation settings for SmartyPants'),
+      '#default_value' => variable_get("marksmarty_smarty_hyphens_$format", 0),
+      '#options' => array(0 => t('"--" for em-dashes; no en-dash support'), 1 => t('"---" for em-dashes; "--" for en-dashes'), 2 => t('"--" for em-dashes; "---" for en-dashes')),
+    );
+  }
   // Wrap ampersand settings
   $form['typogrify_settings']["typogrify_is_amp_on_$format"] = array(
-    '#type' => 'select',
-    '#title' => t('Wrap ampersands?'),
+    '#type' => 'checkbox',
+    '#title' => t('Wrap ampersands'),
     '#default_value' => variable_get("typogrify_is_amp_on_$format", 1),
-    '#options' => array(0 => t('No'), 1 => t('Yes')),
   );
     
   // Remove widows settings
   $form['typogrify_settings']["typogrify_is_widont_on_$format"] = array(
-    '#type' => 'select',
-    '#title' => t('Remove widows?'),
+    '#type' => 'checkbox',
+    '#title' => t('Remove widows'),
     '#default_value' => variable_get("typogrify_is_widont_on_$format", 1),
-    '#options' => array(0 => t('No'), 1 => t('Yes')),
   );
     
   // Wrap caps settings
   $form['typogrify_settings']["typogrify_is_caps_on_$format"] = array(
-    '#type' => 'select',
-    '#title' => t('Wrap caps?'),
+    '#type' => 'checkbox',
+    '#title' => t('Wrap caps'),
     '#default_value' => variable_get("typogrify_is_caps_on_$format", 1),
-    '#options' => array(0 => t('No'), 1 => t('Yes')),
   );
     
   // Wrap initial quotes settings
   $form['typogrify_settings']["typogrify_is_initial_quotes_on_$format"] = array(
-    '#type' => 'select',
-    '#title' => t('Wrap quotation marks?'),
+    '#type' => 'checkbox',
+    '#title' => t('Wrap quotation marks'),
     '#default_value' => variable_get("typogrify_is_initial_quotes_on_$format", 1),
-    '#options' => array(0 => t('No'), 1 => t('Yes')),
   );
   
+  // Ligature Conversion Settings
+  $form['typogrify_settings']['ligatures'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Ligatures'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+  );
+
+  foreach ($ligature_map as $pair => $ligature) {
+    $setting = 'typogrify_use_' . $pair . '_ligature_' . $format;
+    $form['typogrify_settings']['ligatures'][$setting] = array(
+      '#type' => 'checkbox',
+      '#title' => t("Convert $pair to $ligature"),
+      '#default_value' => variable_get($setting, 0),
+    );
+  }
+  
+
+  // Arrow Conversion Settings
+  $form['typogrify_settings']['arrows'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Arrows'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+  );
+
+  foreach ($arrow_map as $ascii => $unicode) {
+    $setting = 'typogrify_use_unicode_for_' . $ascii . '_' . $format;
+    $form['typogrify_settings']['arrows'][$setting] = array(
+      '#type' => 'checkbox',
+      '#title' => t("Convert $ascii to $unicode"),
+      '#default_value' => variable_get($setting, 0),
+    );
+  }
+  
+  
+  // Version Information Settings
   $the_output = '<ul>';
-  $the_output .= '<li>SmartyPants PHP Version: <a href="http://www.michelf.com/projects/php-smartypants/">'.$GLOBALS['SmartyPantsPHPVersion'].'</a></li>';
-  $the_output .= '<li>SmartyPants Syntax Version: '.$GLOBALS['SmartyPantsSyntaxVersion'] .'</li>';
+  if (! module_exists('marksmarty')) {
+    require_once(dirname(__FILE__) . '/smartypants.php');
+    $the_output .= '<li>SmartyPants PHP Version: <a href="http://www.michelf.com/projects/php-smartypants/">'.$GLOBALS['SmartyPantsPHPVersion'].'</a></li>';
+    $the_output .= '<li>SmartyPants Syntax Version: '.$GLOBALS['SmartyPantsSyntaxVersion'] .'</li>';
+  }
   $the_output .= '<li>PHP Typogrify Version: <a href="http://blog.hamstu.com/">1.0</a></li>';
   $the_output .= '</ul>';
 
-  $form['typogrify_settings']['typogrify_status'] = array(
+  $form['typogrify_settings']['info'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Version Information'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+  );
+
+  $form['typogrify_settings']['info']['typogrify_status'] = array(
     '#type' => 'markup',
     '#value' => $the_output,
   );
@@ -171,4 +243,7 @@ function _typogrify_settings($format) {
   return $form;
 }
 
+// what the heck is up with the theme function? This should be: 
+// drupal_set_html_head(theme('stylesheet_import', base_path() . drupal_get_path('module', 'typogrify') .'/typogrify.css'));
+drupal_set_html_head('<style type="text/css" media="all">@import "' . base_path() . drupal_get_path('module', 'typogrify') .'/typogrify.css' . '";</style>');
 ?>
