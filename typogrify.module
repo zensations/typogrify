@@ -62,8 +62,12 @@ function typogrify_help($in_section = 'admin/help#typogrify') {
 
 function _typogrify_process($text, $format) {
 
+  // Load Helpers
   require_once(dirname(__FILE__) . '/php-typogrify.php');
   require_once(dirname(__FILE__) . '/unicode-conversion.php');
+  if (! function_exists('smartypants')) {
+    require_once(dirname(__FILE__) . '/smartypants.php');
+  }
   
   // Wrap ampersands
   if (variable_get("typogrify_is_amp_on_$format", 1) == 1) {
@@ -77,13 +81,10 @@ function _typogrify_process($text, $format) {
   
   
   // Smartypants formatting
-  if (! module_exists('marksmarty')) {
-    require_once(dirname(__FILE__) . '/smartypants.php');
-    if (variable_get("typogrify_is_smarty_on_$format", 1) == 1) {
-      global $smartypants_attr;
-      $smartypants_attr = variable_get("typogrify_smarty_hyphens_$format", 0) + 1;
-      $text = SmartyPants($text);
-    }
+  if (variable_get("marksmarty_is_smarty_on_$format", 1) == 1) {
+    global $smartypants_attr;
+    $smartypants_attr = variable_get("marksmarty_smarty_hyphens_$format", 0) + 1;
+    $text = SmartyPants($text);
   }
   
   // Wrap caps
@@ -97,18 +98,24 @@ function _typogrify_process($text, $format) {
   }
 
   // Build a list of ligatures to convert
-  foreach ($ligature_map as $pair => $ligature) {
-    $setting = 'typogrify_use_' . $pair . '_ligature_' . $format;
-    if (variable_get($setting, 0) == 1) {
-      $characters_to_convert[] = $pair;
+  global $ligature_map;
+  if ((is_array($ligature_map)) && (count($ligature_map) > 0)) {
+    foreach ($ligature_map as $pair => $ligature) {
+      $setting = 'typogrify_use_' . $pair . '_ligature_' . $format;
+      if (variable_get($setting, 0) == 1) {
+        $characters_to_convert[] = $pair;
+      }
     }
   }
   
   // Build a list of arrows to convert
-  foreach ($arrow_map as $ascii => $unicode) {
-    $setting = 'typogrify_use_unicode_for_' . $ascii . '_' . $format;
-    if (variable_get($setting, 0) == 1) {
-      $characters_to_convert[] = $ascii;
+  global $arrow_map;
+  if ((is_array($arrow_map)) && (count($arrow_map) > 0)) {
+    foreach ($arrow_map as $ascii => $unicode) {
+      $setting = 'typogrify_use_unicode_for_' . $ascii . '_' . $format;
+      if (variable_get($setting, 0) == 1) {
+        $characters_to_convert[] = $ascii;
+      }
     }
   }
   
@@ -138,7 +145,7 @@ function _typogrify_settings($format) {
   
   // Smartypants settings
   // We impersonate Marksmarty to ensure that settings are honored by both marksmarty.module and typogrify.module
-  if (! module_exists('marksmarty')) {
+  if (! function_exists('smartypants')) {
   // Smartypants settings
     $form['typogrify_settings']["marksmarty_is_smarty_on_$format"] = array(
       '#type' => 'checkbox',
@@ -220,8 +227,7 @@ function _typogrify_settings($format) {
   
   // Version Information Settings
   $the_output = '<ul>';
-  if (! module_exists('marksmarty')) {
-    require_once(dirname(__FILE__) . '/smartypants.php');
+  if (! function_exists('smartypants')) {
     $the_output .= '<li>SmartyPants PHP Version: <a href="http://www.michelf.com/projects/php-smartypants/">'.$GLOBALS['SmartyPantsPHPVersion'].'</a></li>';
     $the_output .= '<li>SmartyPants Syntax Version: '.$GLOBALS['SmartyPantsSyntaxVersion'] .'</li>';
   }

@@ -6,9 +6,11 @@ if (! (function_exists('SmartyPants'))) {
 }
 
 // Also, we need some regex code from SmartyPants
+global $sp_tags_to_skip;
 $sp_tags_to_skip = '<(/?)(?:pre|code|kbd|script|math)[\s>]';
 
 // See http://www.unicode.org/charts/PDF/UFB00.pdf
+global $ligature_map;
 $ligature_map = array(
   "ffi" => "&#xfb03;",
   "ffl" => "&#xfb04;",
@@ -21,6 +23,7 @@ $ligature_map = array(
 );
 
 // See http:#www.unicode.org/charts/PDF/U2000.pdf
+global $punctuation_map;
 $punctuation_map = array(
   "..."   => "&#x2026;",
   ".."    => "&#x2025;",
@@ -30,6 +33,7 @@ $punctuation_map = array(
 );
 
 // See http:#www.unicode.org/charts/PDF/U2190.pdf
+global $arrow_map;
 $arrow_map = array(
   "->>" => "&#x21a0;",
   "<<-" => "&#x219e;",
@@ -50,6 +54,8 @@ global $unicode_map;
 $unicode_map = array_merge($ligature_map, $arrow_map, $punctuation_map);
 
 function convert_characters($text, $characters_to_convert) {
+
+
 
   // Paramaters:
   // $text                    text to be parsed
@@ -89,6 +95,46 @@ function convert_characters($text, $characters_to_convert) {
     }
   }
   return $result;
+}
+
+
+// _TokenizeHTML is shared between PHP SmartyPants and PHP Markdown.
+// We're borrowing it for Typogrify.module, too
+// We only define it if it is not already defined.
+if (!function_exists('_TokenizeHTML')) {
+	function _TokenizeHTML($str) {
+	//
+	//   Parameter:  String containing HTML markup.
+	//  Returns:    An array of the tokens comprising the input
+	//              string. Each token is either a tag (possibly with nested,
+	//              tags contained therein, such as <a href="<MTFoo>">, or a
+	//              run of text between tags. Each element of the array is a
+	//              two-element array; the first is either 'tag' or 'text';
+	//              the second is the actual value.
+	//
+	//
+	//  Regular expression derived from the _tokenize() subroutine in 
+	//  Brad Choate's MTRegex plugin.
+	//  <http://www.bradchoate.com/past/mtregex.php>
+	//
+		$index = 0;
+		$tokens = array();
+	
+		$match = '(?s:<!(?:--.*?--\s*)+>)|'.	# comment
+				 '(?s:<\?.*?\?>)|'.				# processing instruction
+												# regular tags
+				 '(?:<[/!$]?[-a-zA-Z0-9:]+\b(?>[^"\'>]+|"[^"]*"|\'[^\']*\')*>)'; 
+	
+		$parts = preg_split("{($match)}", $str, -1, PREG_SPLIT_DELIM_CAPTURE);
+	
+		foreach ($parts as $part) {
+			if (++$index % 2 && $part != '') 
+				$tokens[] = array('text', $part);
+			else
+				$tokens[] = array('tag', $part);
+		}
+		return $tokens;
+	}
 }
 
 ?>
