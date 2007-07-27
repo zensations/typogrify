@@ -22,8 +22,8 @@ function typogrify_filter($op, $delta = 0, $format = -1, $text = '') {
     default:
       return $text;
   }
+  
 }
-
 
 function typogrify_filter_tips($delta = 0, $format = -1, $long) {
   if ($long) {
@@ -42,6 +42,13 @@ function typogrify_filter_tips($delta = 0, $format = -1, $long) {
   return $the_output;
 }
 
+function typogrify_menu($may_cache) {
+  drupal_add_css(drupal_get_path('module', 'typogrify'). '/typogrify.css', 'module', 'all', TRUE);
+}
+
+/**
+ * Implementation of hook_help().
+ */
 function typogrify_help($in_section = 'admin/help#typogrify') {
   switch ($in_section) {
     case 'admin/settings/modules#description':
@@ -78,7 +85,6 @@ function _typogrify_process($text, $format) {
   if (variable_get("typogrify_is_widont_on_$format", 1) == 1) {
     $text = widont($text);
   }
-  
   
   // Smartypants formatting
   if (variable_get("marksmarty_is_smarty_on_$format", 1) == 1) {
@@ -249,7 +255,4 @@ function _typogrify_settings($format) {
   return $form;
 }
 
-// what the heck is up with the theme function? This should be: 
-// drupal_set_html_head(theme('stylesheet_import', base_path() . drupal_get_path('module', 'typogrify') .'/typogrify.css'));
-drupal_set_html_head('<style type="text/css" media="all">@import "' . base_path() . drupal_get_path('module', 'typogrify') .'/typogrify.css' . '";</style>');
 ?>
