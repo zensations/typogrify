@@ -3,24 +3,6 @@
 name = Typogrify
 description = Adds typographic refinements.
 package = "Input filters"
-dependencies = filter
 project = "typogrify"
-
-
-; Information added by drupal.org packaging script on 2007-06-19
-version = "5.x-1.x-dev"
-project = "typogrify"
-datestamp = "1182212752"
-
-
-; Information added by drupal.org packaging script on 2007-07-10
-version = "5.x-1.x-dev"
-project = "typogrify"
-datestamp = "1184069636"
-
-
-; Information added by drupal.org packaging script on 2007-07-24
-version = "5.x-1.x-dev"
-project = "typogrify"
-datestamp = "1185279036"
+core = 6.x
 

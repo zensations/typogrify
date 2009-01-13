@@ -1,9 +1,4 @@
-<?php
-
-// We rely on some functions from SmartyPants. If it hasn't been loaded already, we'll load it now.
-if (! (function_exists('SmartyPants'))) {
-  require_once(dirname(__FILE__) . '/smartypants.php');
-}
+<?php // $Id$
 
 // Also, we need some regex code from SmartyPants
 global $sp_tags_to_skip;
@@ -137,4 +132,3 @@ if (!function_exists('_TokenizeHTML')) {
 	}
 }
 
-?>

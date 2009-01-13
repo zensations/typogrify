@@ -1,24 +1,26 @@
-<?php
+<?php // $Id$
 
-#
-# SmartyPants  -  Smart punctuation for web sites
-#
-# by John Gruber
-# <http://daringfireball.net>
-#
-# PHP port by Michel Fortin
-# <http://www.michelf.com/>
-#
-# Copyright (c) 2003-2004 John Gruber
-# Copyright (c) 2004-2005 Michel Fortin
-#
+/**
+ * @file smartypants.php
+ * SmartyPants  -  Smart punctuation for web sites
+ *
+ * by John Gruber <http://daringfireball.net>
+ *
+ * PHP port by Michel Fortin
+ * <http://www.michelf.com/>
+ *
+ * Copyright (c) 2003-2004 John Gruber
+ * Copyright (c) 2004-2005 Michel Fortin
+ *
+ * Re-released under GPLv2 for Drupal.
+ */
 
-
-global	$SmartyPantsPHPVersion, $SmartyPantsSyntaxVersion,
-		$smartypants_attr, $sp_tags_to_skip;
+global $SmartyPantsPHPVersion, $SmartyPantsSyntaxVersion,
+       $smartypants_attr, $sp_tags_to_skip;
 
 $SmartyPantsPHPVersion    = '1.5.1e'; # Fru 9 Dec 2005
 $SmartyPantsSyntaxVersion = '1.5.1';  # Fri 12 Mar 2004
+
 
 
 # Configurable variables:
@@ -32,35 +34,6 @@ $smartypants_attr = "1";  # Change this to configure.
 $sp_tags_to_skip = '<(/?)(?:pre|code|kbd|script|math)[\s>]';
 
 
-# -- WordPress plugin interface -----------------------------------------------
-/*
-Plugin Name: SmartyPants
-Plugin URI: http://www.michelf.com/projects/php-smartypants/
-Description: SmartyPants is a web publishing utility that translates plain ASCII punctuation characters into &#8220;smart&#8221; typographic punctuation HTML entities. This plugin <strong>replace the default WordPress Texturize algorithm</strong> for the content and the title of your posts, the comments body and author name, and everywhere else Texturize normally apply. Based on the original Perl version by <a href="http://daringfireball.net/">John Gruber</a>.
-Version: 1.5.1e
-Author: Michel Fortin
-Author URI: http://www.michelf.com/
-*/
-if (isset($wp_version)) {
-	# Remove default Texturize filter that would conflict with SmartyPants.
-	remove_filter('category_description', 'wptexturize');
-	remove_filter('list_cats', 'wptexturize');
-	remove_filter('comment_author', 'wptexturize');
-	remove_filter('comment_text', 'wptexturize');
-	remove_filter('single_post_title', 'wptexturize');
-	remove_filter('the_title', 'wptexturize');
-	remove_filter('the_content', 'wptexturize');
-	remove_filter('the_excerpt', 'wptexturize');
-	# Add SmartyPants filter with priority 10 (same as Texturize).
-	add_filter('category_description', 'SmartyPants', 10);
-	add_filter('list_cats', 'SmartyPants', 10);
-	add_filter('comment_author', 'SmartyPants', 10);
-	add_filter('comment_text', 'SmartyPants', 10);
-	add_filter('single_post_title', 'SmartyPants', 10);
-	add_filter('the_title', 'SmartyPants', 10);
-	add_filter('the_content', 'SmartyPants', 10);
-	add_filter('the_excerpt', 'SmartyPants', 10);
-}
 
 # -- Smarty Modifier Interface ------------------------------------------------
 function smarty_modifier_smartypants($text, $attr = NULL) {
@@ -677,149 +650,7 @@ function _TokenizeHTML($str) {
 }
 endif;
 
-
 /*
-
-PHP SmartyPants
-===============
-
-Description
------------
-
-This is a PHP translation of the original SmartyPants quote educator written in
-Perl by John Gruber.
-
-SmartyPants is a web publishing utility that translates plain ASCII
-punctuation characters into "smart" typographic punctuation HTML
-entities. SmartyPants can perform the following transformations:
-
-*	Straight quotes (`"` and `'`) into "curly" quote HTML entities
-*	Backticks-style quotes (` ``like this'' `) into "curly" quote HTML 
-	entities
-*	Dashes (`--` and `---`) into en- and em-dash entities
-*	Three consecutive dots (`...`) into an ellipsis entity
-
-SmartyPants does not modify characters within `<pre>`, `<code>`, `<kbd>`, 
-`<script>`, or `<math>` tag blocks. Typically, these tags are used to 
-display text where smart quotes and other "smart punctuation" would not 
-be appropriate, such as source code or example markup.
-
-
-### Backslash Escapes ###
-
-If you need to use literal straight quotes (or plain hyphens and
-periods), SmartyPants accepts the following backslash escape sequences
-to force non-smart punctuation. It does so by transforming the escape
-sequence into a decimal-encoded HTML entity:
-
-	Escape  Value  Character
-	------  -----  ---------
-	  \\    &#92;    \
-	  \"    &#34;    "
-	  \'    &#39;    '
-	  \.    &#46;    .
-	  \-    &#45;    -
-	  \`    &#96;    `
-
-This is useful, for example, when you want to use straight quotes as
-foot and inch marks: 6'2" tall; a 17" iMac.
-
-
-Bugs
-----
-
-To file bug reports or feature requests (other than topics listed in the
-Caveats section above) please send email to:
-
-<michel.fortin@michelf.com>
-
-If the bug involves quotes being curled the wrong way, please send example
-text to illustrate.
-
-
-### Algorithmic Shortcomings ###
-
-One situation in which quotes will get curled the wrong way is when
-apostrophes are used at the start of leading contractions. For example:
-
-	'Twas the night before Christmas.
-
-In the case above, SmartyPants will turn the apostrophe into an opening
-single-quote, when in fact it should be a closing one. I don't think
-this problem can be solved in the general case -- every word processor
-I've tried gets this wrong as well. In such cases, it's best to use the
-proper HTML entity for closing single-quotes (`&#8217;`) by hand.
-
-
-Version History
----------------
-
-1.5.1e (9 Dec 2005)
-
-*	Corrected a bug that prevented special characters from being 
-    escaped.
-
-
-1.5.1d (25 May 2005)
-
-*	Corrected a small bug in `_TokenizeHTML` where a Doctype declaration
-	was not seen as HTML (smart quotes where applied inside).
-
-
-1.5.1c (13 Dec 2004)
-
-*	Changed a regular expression in `_TokenizeHTML` that could lead to
-	a segmentation fault with PHP 4.3.8 on Linux.
-
-
-1.5.1b (6 Sep 2004)
-
-*	Corrected a problem with quotes immediately following a dash
-	with no space between: `Text--"quoted text"--text.`
-	
-*	PHP SmartyPants can now be used as a modifier by the Smarty 
-	template engine. Rename the file to "modifier.smartypants.php"
-	and put it in your smarty plugins folder.
-
-*	Replaced a lot of space characters by tabs, saving about 4 KB.
-
-
-1.5.1a (30 Jun 2004)
-
-*	PHP Markdown and PHP Smartypants now share the same `_TokenizeHTML` 
-	function when loaded simultanously.
-
-*	Changed the internals of `_TokenizeHTML` to lower the PHP version
-	requirement to PHP 4.0.5.
-
-
-1.5.1 (6 Jun 2004)
-
-*	Initial release of PHP SmartyPants, based on version 1.5.1 of the 
-	original SmartyPants written in Perl.
-
-
-Author
-------
-
-John Gruber
-<http://daringfireball.net/>
-
-Ported to PHP by Michel Fortin
-<http://www.michelf.com/>
-
-
-Additional Credits
-------------------
-
-Portions of this plug-in are based on Brad Choate's nifty MTRegex plug-in.
-Brad Choate also contributed a few bits of source code to this plug-in.
-Brad Choate is a fine hacker indeed. (<http://bradchoate.com/>)
-
-Jeremy Hedley (<http://antipixel.com/>) and Charles Wiltgen
-(<http://playbacktime.com/>) deserve mention for exemplary beta testing.
-
-
 Copyright and License
 ---------------------
 
@@ -855,6 +686,5 @@ interruption) however caused and on any theory of liability, whether in
 contract, strict liability, or tort (including negligence or otherwise) 
 arising in any way out of the use of this software, even if advised of the
 possibility of such damage.
-
 */
-?>
+
