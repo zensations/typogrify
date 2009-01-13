@@ -70,7 +70,7 @@ function typogrify_help($in_section = 'admin/help#typogrify') {
 function _typogrify_process($text, $format) {
 
   // Load Helpers
-  require_once(dirname(__FILE__) . '/php-typogrify.php');
+  require_once(dirname(__FILE__) . '/typogrify.class.php');
   require_once(dirname(__FILE__) . '/unicode-conversion.php');
   if (! function_exists('smartypants')) {
     require_once(dirname(__FILE__) . '/smartypants.php');
@@ -78,12 +78,12 @@ function _typogrify_process($text, $format) {
   
   // Wrap ampersands
   if (variable_get("typogrify_is_amp_on_$format", 1) == 1) {
-    $text = amp($text);
+    $text = Typogrify::amp($text);
   }
   
   // Remove widows
   if (variable_get("typogrify_is_widont_on_$format", 1) == 1) {
-    $text = widont($text);
+    $text = Typogrify::widont($text);
   }
   
   // Smartypants formatting
@@ -95,12 +95,12 @@ function _typogrify_process($text, $format) {
   
   // Wrap caps
   if (variable_get("typogrify_is_caps_on_$format", 1) == 1) {
-    $text = caps($text);
+    $text = Typogrify::caps($text);
   }
 
   // Wrap initial quotes
   if (variable_get("typogrify_is_initial_quotes_on_$format", 1) == 1) {
-    $text = initial_quotes($text);
+    $text = Typogrify::initial_quotes($text);
   }
 
   // Build a list of ligatures to convert
