@@ -87,7 +87,7 @@ function _typogrify_process($text, $format) {
   // Load Helpers.
   module_load_include('class.php', 'typogrify');
   module_load_include('php', 'typogrify', 'unicode-conversion');
-  if (!function_exists('smartypants')) {
+  if (!function_exists('marksmarty_filter')) {
     module_load_include('php', 'typogrify', 'smartypants');
   }
 
@@ -104,7 +104,7 @@ function _typogrify_process($text, $format) {
   // Smartypants formatting.
   if (variable_get("marksmarty_is_smarty_on_$format", 1) == 1) {
     global $smartypants_attr;
-    $smartypants_attr = variable_get("marksmarty_smarty_hyphens_$format", 0) + 1;
+    $smartypants_attr = variable_get("marksmarty_smarty_hyphens_$format", 1);
     $text = SmartyPants($text);
   }
 
@@ -170,20 +170,26 @@ function _typogrify_settings($format) {
   // Smartypants settings
   // We impersonate Marksmarty to ensure that settings are honored by
   // both marksmarty.module and typogrify.module.
-  if (!function_exists('smartypants')) {
+  if (!function_exists('marksmarty_filter')) {
   // Smartypants settings.
     $form['typogrify_settings']["marksmarty_is_smarty_on_$format"] = array(
       '#type' => 'checkbox',
-      '#title' => t('Use typographers quotation marks and dashes (<a href="http://daringfireball.net/projects/smartypants/">SmartyPants</a>)'),
+      '#title' => t('Use typographers quotation marks and dashes (!smartylink)', array('!smartylink' => l('SmartyPants', 'http://daringfireball.net/projects/smartypants/'))),
       '#default_value' => variable_get("marksmarty_is_smarty_on_$format", 1),
     );
 
     // Smartypants hyphenation settings.
+    // Uses the same values as the parse attributes in the SmartyPants 
+    // function (@see SmartyPants in smartypants.php)
     $form['typogrify_settings']["marksmarty_smarty_hyphens_$format"] = array(
       '#type' => 'select',
       '#title' => t('Hyphenation settings for SmartyPants'),
-      '#default_value' => variable_get("marksmarty_smarty_hyphens_$format", 0),
-      '#options' => array(0 => t('"--" for em-dashes; no en-dash support'), 1 => t('"---" for em-dashes; "--" for en-dashes'), 2 => t('"--" for em-dashes; "---" for en-dashes')),
+      '#default_value' => variable_get("marksmarty_smarty_hyphens_$format", 3),
+      '#options' => array(
+        1 => t('"--" for em-dashes; no en-dash support'),
+        3 => t('"--" for em-dashes; "---" for en-dashes'),
+        2 => t('"---" for em-dashes; "--" for en-dashes'),
+      ),
     );
   }
   // Wrap ampersand settings.
@@ -251,27 +257,14 @@ function _typogrify_settings($format) {
     );
   }
 
-
   // Version Information Settings
-  $output = '<ul>';
-  if (function_exists('smartypants')) {
-    $output .= '<li>SmartyPants PHP Version: <a href="http://www.michelf.com/projects/php-smartypants/">';
-    $output .= $GLOBALS['SmartyPantsPHPVersion'] .'</a></li>';
-    $output .= '<li>SmartyPants Syntax Version: '. $GLOBALS['SmartyPantsSyntaxVersion'] .'</li>';
-  }
-  $output .= '<li>PHP Typogrify Version: <a href="http://blog.hamstu.com/">1.0</a></li>';
-  $output .= '</ul>';
-
-  $form['typogrify_settings']['info'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Version Information'),
-    '#collapsible' => TRUE,
-    '#collapsed' => TRUE,
-  );
+  $version_strings = array();
+  $version_strings[] = t('SmartyPants PHP version: !version', array('!version' => l($GLOBALS['SmartyPantsPHPVersion'], 'http://www.michelf.com/projects/php-smartypants/')));
+  $version_strings[] = t('PHP Typogrify Version: !version', array('!version' => l('1.0', 'http://blog.hamstu.com/')));
 
   $form['typogrify_settings']['info']['typogrify_status'] = array(
     '#type' => 'markup',
-    '#value' => $output,
+    '#value' => theme('item_list', $version_strings, t('Version Information'))
   );
 
   return $form;

@@ -35,7 +35,7 @@ class Typogrify {
   /**
    * Helper method for caps method - used for preg_replace_callback
    */
-  protected static function _cap_wrapper($matchobj) {
+  public static function _cap_wrapper($matchobj) {
     if (!empty($matchobj[2])) {
       return sprintf('<span class="caps">%s</span>', $matchobj[2]);
     }
@@ -98,7 +98,7 @@ class Typogrify {
           $result[] = $token[1];
         }
         else {
-          $result[] = preg_replace_callback($cap_finder, 'Typogrify::_cap_wrapper', $token[1]);
+          $result[] = preg_replace_callback($cap_finder, array('Typogrify', '_cap_wrapper'), $token[1]);
         }
       }
     }        
@@ -108,7 +108,7 @@ class Typogrify {
   /**
    * Helper method for initial_quotes method - used for preg_replace_callback
    */
-  protected static function _quote_wrapper($matchobj) {
+  public static function _quote_wrapper($matchobj) {
     if (!empty($matchobj[7])) {
       $classname = "dquo";
       $quote = $matchobj[7];
@@ -144,7 +144,7 @@ class Typogrify {
 	                                                                    					# double quotes are in group 7, singles in group 8
 	                    /ix";
     }
-    return preg_replace_callback($quote_finder, 'Typogrify::_quote_wrapper', $text);
+    return preg_replace_callback($quote_finder, array('Typogrify', '_quote_wrapper'), $text);
   }
 
   /**
@@ -158,8 +158,13 @@ class Typogrify {
    */
   public static function widont($text) {
     // This regex is a beast, tread lightly
-    $widont_finder = "/([^\s])\s+(((<(a|span|i|b|em|strong|acronym|caps|sub|sup|abbr|big|small|code|cite|tt)[^>]*>)*\s*[^\s<>]+)(<\/(a|span|i|b|em|strong|acronym|caps|sub|sup|abbr|big|small|code|cite|tt)>)*[^\s<>]*\s*(<\/(p|h[1-6]|li)>|$))/i";
-    return preg_replace($widont_finder, '$1&nbsp;$2', $text);
+    $widont_finder = "/(\s+)                                  # the space to replace
+                      ([^<>\s]+                               # must be flollowed by non-tag non-space characters
+                      \s*                                     # optional white space! 
+                      (<\/(a|em|span|strong|i|b)[^>]*>\s*)*   # optional closing inline tags with optional white space after each
+                      ((<\/(p|h[1-6]|li|dt|dd)>)|$))          # end with a closing p, h1-6, li or the end of the string
+                      /x";
+    return preg_replace($widont_finder, '&nbsp;$2', $text);
   }
 
   /**
