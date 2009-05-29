@@ -4,5 +4,9 @@ name = Typogrify
 description = Adds typographic refinements.
 package = "Input filters"
 project = "typogrify"
-core = 6.x
+core = 7.x
+files[] = typogrify.module
+files[] = typogrify.class.php
+files[] = smartypants.php
+files[] = unicode-conversion.php
 
