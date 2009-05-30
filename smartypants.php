@@ -1,4 +1,5 @@
-<?php // $Id$
+<?php
+// $Id$
 
 /**
  * @file smartypants.php
@@ -15,24 +16,19 @@
  * Re-released under GPLv2 for Drupal.
  */
 
-global $SmartyPantsPHPVersion, $SmartyPantsSyntaxVersion,
-       $smartypants_attr, $sp_tags_to_skip;
+define('SMARTYPANTS_PHP_VERSION', '1.5.1e'); # Fri 9 Dec 2005
+define('SMARTYPANTS_SYNTAX_VERSION', '1.5.1');  # Fri 12 Mar 2004
+// Regex-pattern for tags we don't mess with.
+define('SMARTYPANTS_TAGS_TO_SKIP', '@<(/?)(?:pre|code|kbd|script|math)[\s>]@');
 
-$SmartyPantsPHPVersion    = '1.5.1e'; # Fru 9 Dec 2005
-$SmartyPantsSyntaxVersion = '1.5.1';  # Fri 12 Mar 2004
-
-
-
-# Configurable variables:
-$smartypants_attr = "1";  # Change this to configure.
+// A global variable to keep track of our current SmartyPants 
+// configuration setting.
+global $_typogrify_smartypants_attr;
+$_typogrify_smartypants_attr = "1";  # Change this to configure.
 						  #  1 =>  "--" for em-dashes; no en-dash support
 						  #  2 =>  "---" for em-dashes; "--" for en-dashes
 						  #  3 =>  "--" for em-dashes; "---" for en-dashes
 						  #  See docs for more configuration options.
-
-# Globals:
-$sp_tags_to_skip = '<(/?)(?:pre|code|kbd|script|math)[\s>]';
-
 
 
 # -- Smarty Modifier Interface ------------------------------------------------
@@ -43,12 +39,12 @@ function smarty_modifier_smartypants($text, $attr = NULL) {
 
 
 function SmartyPants($text, $attr = NULL, $ctx = NULL) {
-	global $smartypants_attr, $sp_tags_to_skip;
+	global $_typogrify_smartypants_attr;
 	# Paramaters:
 	$text;   # text to be parsed
 	$attr;   # value of the smart_quotes="" attribute
 	$ctx;    # MT context object (unused)
-	if ($attr == NULL) $attr = $smartypants_attr;
+	if ($attr == NULL) $attr = $_typogrify_smartypants_attr;
 
 	# Options to specify which transformations to make:
 	$do_stupefy = FALSE;
@@ -119,7 +115,7 @@ function SmartyPants($text, $attr = NULL, $ctx = NULL) {
 	$result = '';
 	$in_pre = 0;  # Keep track of when we're inside <pre> or <code> tags.
 
-	$prev_token_last_char = "";     # This is a cheat, used to get some context
+	$prev_token_last_char = '';     # This is a cheat, used to get some context
 									# for one-character tokens that consist of 
 									# just a quote char. What we do is remember
 									# the last character of the previous text
@@ -127,10 +123,10 @@ function SmartyPants($text, $attr = NULL, $ctx = NULL) {
 									# character quote tokens correctly.
 
 	foreach ($tokens as $cur_token) {
-		if ($cur_token[0] == "tag") {
+		if ($cur_token[0] == 'tag') {
 			# Don't mess with quotes inside tags.
 			$result .= $cur_token[1];
-			if (preg_match("@$sp_tags_to_skip@", $cur_token[1], $matches)) {
+			if (preg_match(SMARTYPANTS_TAGS_TO_SKIP, $cur_token[1], $matches)) {
 				$in_pre = isset($matches[1]) && $matches[1] == '/' ? 0 : 1;
 			}
 		} else {
@@ -194,12 +190,12 @@ function SmartyPants($text, $attr = NULL, $ctx = NULL) {
 
 
 function SmartQuotes($text, $attr = NULL, $ctx = NULL) {
-	global $smartypants_attr, $sp_tags_to_skip;
+	global $_typogrify_smartypants_attr;
 	# Paramaters:
 	$text;   # text to be parsed
 	$attr;   # value of the smart_quotes="" attribute
 	$ctx;    # MT context object (unused)
-	if ($attr == NULL) $attr = $smartypants_attr;
+	if ($attr == NULL) $attr = $_typogrify_smartypants_attr;
 
 	$do_backticks;   # should we educate ``backticks'' -style quotes?
 
@@ -239,7 +235,7 @@ function SmartQuotes($text, $attr = NULL, $ctx = NULL) {
 		if ($cur_token[0] == "tag") {
 			# Don't mess with quotes inside tags
 			$result .= $cur_token[1];
-			if (preg_match("@$sp_tags_to_skip@", $cur_token[1], $matches)) {
+			if (preg_match(SMARTYPANTS_TAGS_TO_SKIP, $cur_token[1], $matches)) {
 				$in_pre = isset($matches[1]) && $matches[1] == '/' ? 0 : 1;
 			}
 		} else {
@@ -288,12 +284,12 @@ function SmartQuotes($text, $attr = NULL, $ctx = NULL) {
 
 
 function SmartDashes($text, $attr = NULL, $ctx = NULL) {
-	global $smartypants_attr, $sp_tags_to_skip;
+	global $_typogrify_smartypants_attr;
 	# Paramaters:
 	$text;   # text to be parsed
 	$attr;   # value of the smart_dashes="" attribute
 	$ctx;    # MT context object (unused)
-	if ($attr == NULL) $attr = $smartypants_attr;
+	if ($attr == NULL) $attr = $_typogrify_smartypants_attr;
 
 	# reference to the subroutine to use for dash education, default to EducateDashes:
 	$dash_sub_ref = 'EducateDashes';
@@ -320,7 +316,7 @@ function SmartDashes($text, $attr = NULL, $ctx = NULL) {
 		if ($cur_token[0] == "tag") {
 			# Don't mess with quotes inside tags
 			$result .= $cur_token[1];
-			if (preg_match("@$sp_tags_to_skip@", $cur_token[1], $matches)) {
+			if (preg_match(SMARTYPANTS_TAGS_TO_SKIP, $cur_token[1], $matches)) {
 				$in_pre = isset($matches[1]) && $matches[1] == '/' ? 0 : 1;
 			}
 		} else {
@@ -341,7 +337,7 @@ function SmartEllipses($text, $attr = NULL, $ctx = NULL) {
 	$text;   # text to be parsed
 	$attr;   # value of the smart_ellipses="" attribute
 	$ctx;    # MT context object (unused)
-	if ($attr == NULL) $attr = $smartypants_attr;
+	if ($attr == NULL) $attr = $_typogrify_smartypants_attr;
 
 	if ($attr == 0) {
 		# do nothing;
@@ -357,7 +353,7 @@ function SmartEllipses($text, $attr = NULL, $ctx = NULL) {
 		if ($cur_token[0] == "tag") {
 			# Don't mess with quotes inside tags
 			$result .= $cur_token[1];
-			if (preg_match("@$sp_tags_to_skip@", $cur_token[1], $matches)) {
+			if (preg_match(SMARTYPANTS_TAGS_TO_SKIP, $cur_token[1], $matches)) {
 				$in_pre = isset($matches[1]) && $matches[1] == '/' ? 0 : 1;
 			}
 		} else {

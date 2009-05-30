@@ -1,4 +1,6 @@
-<?php //$Id$
+<?php
+// $Id$
+
 /**
  * @file typogrify.class.php
  * Defines a class for providing different typographical tweaks to HTML
