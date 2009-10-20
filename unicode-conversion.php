@@ -19,6 +19,8 @@ function unicode_conversion_map($type = 'all') {
       'ff'  => '&#xfb00;',
       'fi'  => '&#xfb01;',
       'fl'  => '&#xfb02;',
+      'ij'  => '&#x0133;',
+      'IJ'  => '&#x0132;',
       'st'  => '&#xfb06;',
       'ss'  => '&szlig;',
     ),
