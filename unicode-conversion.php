@@ -20,7 +20,6 @@ function unicode_conversion_map($type = 'all') {
       'fi'  => '&#xfb01;',
       'fl'  => '&#xfb02;',
       'st'  => '&#xfb06;',
-      'ft'  => '&#xfb05;',
       'ss'  => '&szlig;',
     ),
     // See http:#www.unicode.org/charts/PDF/U2000.pdf
