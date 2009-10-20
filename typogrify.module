@@ -2,39 +2,40 @@
 // $Id$
 
 /**
- * @file typogrify.module
+ * @file
  * Typogrify: Brings typographical refinemnts to drupal
  *
  * Hook together all the typogrify components.
  */
 
 /**
- * Implementation of hook_filter().
+ * Implementation of hook_filter_info().
  */
-function typogrify_filter($op, $delta = 0, $format = -1, $text = '') {
-  switch ($op) {
-    case 'list':
-      return array(t('Typogrify'));
-
-    case 'description':
-      return t('Adds typographic refinements.');
-
-    case 'settings':
-      return _typogrify_settings($format);
-
-    case 'process':
-      return _typogrify_process($text, $format);
-
-    default:
-      return $text;
-  }
-
+function typogrify_filter_info() {
+  return array('typogrify' => array(
+    'title' => t('Typogrify'),
+    'description' => t('Adds typographic refinements.'),
+    'process callback' => '_typogrify_process',
+    'settings callback' => '_typogrify_settings',
+    'default settings' => array(
+      'smartypants_enabled' => 1,
+      'smartypants_hyphens' => 3,
+      'wrap_ampersand' => 1,
+      'widont_enabled' => 1,
+      'wrap_caps' => 1,
+      'wrap_initial_quotes' => 1,
+      'long_s' => 0,
+      'ligatures' => array(),
+      'arrows' => array(),
+    ),
+    'tips callback' => '_typogrify_filter_tips',
+  ));
 }
 
 /**
- * Implementation of hook_filter_tips().
+ * Filter tips callback for Typogrify filter.
  */
-function typogrify_filter_tips($delta = 0, $format = -1, $long) {
+function _typogrify_filter_tips($filter, $format, $long) {
   if ($long) {
     $output = t('Typogrify.module brings the typographic refinements of Typogrify to Drupal.<ul>
 <li>Wraps ampersands (the $ldquo;&amp;&rdquo; character) with &lt;span class=\"amp\"&gt;&amp;&lt;/span&gt;.</li>
@@ -53,28 +54,10 @@ function typogrify_filter_tips($delta = 0, $format = -1, $long) {
 }
 
 /**
- * Implementation of hook_filter_init().
+ * Implementation of hook_init().
  */
 function typogrify_init() {
   drupal_add_css(drupal_get_path('module', 'typogrify') . '/typogrify.css');
-}
-
-/**
- * Implementation of hook_help().
- */
-function typogrify_help($path, $arg) {
-  $output = '';
-  switch ($path) {
-    case 'admin/settings/modules#description':
-      $output = t('Adds typographic refinements.');
-      break;
-
-    case 'admin/help#typogrify':
-      $output = t('Adds typographic refinements.');
-      break;
-  }
-
-  return $output;
 }
 
 /**
@@ -87,53 +70,50 @@ function typogrify_help($path, $arg) {
  * @return string
  *    The filtered text.
  */
-function _typogrify_process($text, $format) {
+function _typogrify_process($text, $filter, $format, $langcode, $cache, $cache_id) {
   $characters_to_convert = array();
   // Load Helpers.
   module_load_include('class.php', 'typogrify');
   module_load_include('php', 'typogrify', 'unicode-conversion');
   module_load_include('php', 'typogrify', 'smartypants');
 
-  // Load the current format settings.
-  $settings = _typogrify_get_settings($format);
-
   // Wrap ampersands.
-  if ($settings['wrap_ampersand']) {
+  if ($filter->settings['wrap_ampersand']) {
     $text = Typogrify::amp($text);
   }
 
   // Remove widows.
-  if ($settings['widont_enabled']) {
+  if ($filter->settings['widont_enabled']) {
     $text = Typogrify::widont($text);
   }
 
   // Smartypants formatting.
-  if ($settings['smartypants_enabled']) {
+  if ($filter->settings['smartypants_enabled']) {
     global $_typogrify_smartypants_attr;
-    $_typogrify_smartypants_attr = $settings['smartypants_hyphens'];
+    $_typogrify_smartypants_attr = $filter->settings['smartypants_hyphens'];
     $text = SmartyPants($text);
   }
 
   // Wrap caps.
-  if ($settings['wrap_caps']) {
+  if ($filter->settings['wrap_caps']) {
     $text = Typogrify::caps($text);
   }
 
   // Wrap initial quotes.
-  if ($settings['wrap_initial_quotes']) {
+  if ($filter->settings['wrap_initial_quotes']) {
     $text = Typogrify::initial_quotes($text);
   }
 
   // Build a list of ligatures to convert.
   foreach (unicode_conversion_map('ligature') as $ascii => $unicode) {
-    if ($settings['ligatures'][$ascii]) {
+    if ($filter->settings['ligatures'][$ascii]) {
       $characters_to_convert[] = $ascii;
     }
   }
 
   // Build a list of arrows to convert.
   foreach (unicode_conversion_map('arrow') as $ascii => $unicode) {
-    if ($settings['arrows'][$ascii]) {
+    if ($filter->settings['arrows'][$ascii]) {
       $characters_to_convert[] = $ascii;
     }
   }
@@ -155,41 +135,32 @@ function _typogrify_process($text, $format) {
  * @return array
  *    Form API array containing our settings form.
  */
-function _typogrify_settings($format) {
+function _typogrify_settings(&$form_state, $filter, $defaults, $format, $filters) {
   module_load_include('class.php', 'typogrify');
   module_load_include('php', 'typogrify', 'unicode-conversion');
   module_load_include('php', 'typogrify', 'smartypants');
 
-  // Load the Typogrify settings through a helper function.
-  $settings = _typogrify_get_settings($format);
+  $form = array();
 
-  $fieldset = array(
-    '#type' => 'fieldset',
-    '#title' => t('Typogrify'),
-    '#collapsible' => TRUE,
-    '#collapsed' => FALSE,
-    '#tree' => TRUE,
-  );
-
-  $fieldset['help'] = array(
+  $form['help'] = array(
     '#type' => 'markup',
     '#value' => '<p>Enable the following typographic refinements:</p>',
   );
 
   // Smartypants settings.
-  $fieldset['smartypants_enabled'] = array(
+  $form['smartypants_enabled'] = array(
     '#type' => 'checkbox',
     '#title' => t('Use typographers quotation marks and dashes (!smartylink)', array('!smartylink' => l('SmartyPants', 'http://daringfireball.net/projects/smartypants/'))),
-    '#default_value' => $settings['smartypants_enabled'],
+    '#default_value' => $defaults->settings['smartypants_enabled'],
   );
 
   // Smartypants hyphenation settings.
   // Uses the same values as the parse attributes in the SmartyPants 
   // function (@see SmartyPants in smartypants.php)
-  $fieldset['smartypants_hyphens'] = array(
+  $form['smartypants_hyphens'] = array(
     '#type' => 'select',
     '#title' => t('Hyphenation settings for SmartyPants'),
-    '#default_value' => $settings['smartypants_hyphens'],
+    '#default_value' => $defaults->settings['smartypants_hyphens'],
     '#options' => array(
       1 => t('“--” for em-dashes; no en-dash support'),
       3 => t('“--” for em-dashes; “---” for en-dashes'),
@@ -198,44 +169,44 @@ function _typogrify_settings($format) {
   );
 
   // Wrap ampersand settings.
-  $fieldset['wrap_ampersand'] = array(
+  $form['wrap_ampersand'] = array(
     '#type' => 'checkbox',
     '#title' => t('Wrap ampersands'),
-    '#default_value' => $settings['wrap_ampersand'],
+    '#default_value' => $defaults->settings['wrap_ampersand'],
   );
 
   // Remove widows settings.
-  $fieldset['widont_enabled'] = array(
+  $form['widont_enabled'] = array(
     '#type' => 'checkbox',
     '#title' => t('Remove widows'),
-    '#default_value' => $settings['widont_enabled'],
+    '#default_value' => $defaults->settings['widont_enabled'],
   );
 
   // Wrap caps settings.
-  $fieldset['wrap_caps'] = array(
+  $form['wrap_caps'] = array(
     '#type' => 'checkbox',
     '#title' => t('Wrap caps'),
-    '#default_value' => $settings['wrap_caps'],
+    '#default_value' => $defaults->settings['wrap_caps'],
   );
 
   // Wrap initial quotes settings.
-  $fieldset['wrap_initial_quotes'] = array(
+  $form['wrap_initial_quotes'] = array(
     '#type' => 'checkbox',
     '#title' => t('Wrap quotation marks'),
-    '#default_value' => $settings['wrap_initial_quotes'],
+    '#default_value' => $defaults->settings['wrap_initial_quotes'],
   );
-
+  
   // Ligature conversion settings.
   $ligature_options = array();
   foreach (unicode_conversion_map('ligature') as $ascii => $unicode) {
-    $ligature_options[$ascii] =  t('Convert @ascii to !unicode', array('@ascii' => $ascii, '!unicode' => $unicode));
+    $ligature_options[$ascii] =  t('Convert !ascii to !unicode', array('!ascii' => $ascii, '!unicode' => $unicode));
   }
 
-  $fieldset['ligatures'] = array(
+  $form['ligatures'] = array(
     '#type' => 'checkboxes',
     '#title' => t('Ligatures'),
     '#options' => $ligature_options,
-    '#default_value' => $settings['ligatures'],
+    '#default_value' => $defaults->settings['ligatures'],
   );
 
   // Arrow conversion settings.
@@ -244,11 +215,11 @@ function _typogrify_settings($format) {
     $arrow_options[$ascii] =  t('Convert @ascii to !unicode', array('@ascii' => $ascii, '!unicode' => $unicode));
   }
 
-  $fieldset['arrows'] = array(
+  $form['arrows'] = array(
     '#type' => 'checkboxes',
     '#title' => t('Arrows'),
     '#options' => $arrow_options,
-    '#default_value' => $settings['arrows'],
+    '#default_value' => $defaults->settings['arrows'],
   );
 
   // Version Information Settings
@@ -256,59 +227,11 @@ function _typogrify_settings($format) {
   $version_strings[] = t('SmartyPants PHP version: !version', array('!version' => l(SMARTYPANTS_PHP_VERSION, 'http://www.michelf.com/projects/php-smartypants/')));
   $version_strings[] = t('PHP Typogrify Version: !version', array('!version' => l('1.0', 'http://blog.hamstu.com/')));
 
-  $fieldset['info']['typogrify_status'] = array(
+  $form['info']['typogrify_status'] = array(
     '#type' => 'markup',
     '#value' => theme('item_list', $version_strings, t('Version Information'))
   );
 
-  // Name our fieldset based on the format, so the settings will be 
-  // stored in one array per format.
-  $form['typogrify_settings_' . $format] = $fieldset;
-
   return $form;
-}
-
-
-/**
- * Get the Typogrify settings for a filter format.
- *
- * @param integer $format
- *    The format ID to fetch settings for.
- * @return array
- *    The current settings, merged with the default settings.
- */
-function _typogrify_get_settings($format) {
-  // Load the stored settings, if any.
-  $settings = variable_get('typogrify_settings_' . $format, array());
-
-  // Then merge in our default settings.
-  $settings += _typogrify_default_settings();
-  return $settings;
-}
-
-/**
- * Return the default settings.
- */
-function _typogrify_default_settings() {
-  $settings = array(
-    'smartypants_enabled' => 1,
-    'smartypants_hyphens' => 3,
-    'wrap_ampersand' => 1,
-    'widont_enabled' => 1,
-    'wrap_caps' => 1,
-    'wrap_initial_quotes' => 1,
-    'ligatures' => array(),
-    'arrows' => array(),
-  );
-
-  // Fetch all our unicode conversion, and default them all to disabled.
-  $uc_map = unicode_conversion_map('nested');
-  foreach ($uc_map['ligature'] as $ascii => $ligature) {
-    $settings['ligatures'][$ascii] = 0;
-  }
-  foreach ($uc_map['arrow'] as $ascii => $arrow) {
-    $settings['arrows'][$ascii] = 0;
-  }
-  return $settings;
 }
 
