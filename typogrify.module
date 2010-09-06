@@ -47,7 +47,7 @@ function _typogrify_filter_tips($filter, $format, $long) {
 <li>Adds a css style sheet that uses the &lt;span&gt; tags to substitute a showy ampersand in headlines, switch caps to small caps, and hang initial quotation marks.</li></ul>');
   }
   else {
-    $output = t('Adds typographic refinements.');
+    $output = t('Typographic refinements will be added.');
   }
 
   return $output;
