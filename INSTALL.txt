@@ -1,4 +1,3 @@
-$Id$
 
 
 To install Typogrify, move the entire "typogrify" directory into your Drupal installation's modules folder.

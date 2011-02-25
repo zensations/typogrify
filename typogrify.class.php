@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * @file typogrify.class.php

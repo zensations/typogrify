@@ -1,4 +1,3 @@
-$Id$
 
 
 What is Typogrify.module?

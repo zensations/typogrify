@@ -1,5 +1,4 @@
 <?php 
-// $Id$
 
 /**
  * Return the unicode conversion maps.
